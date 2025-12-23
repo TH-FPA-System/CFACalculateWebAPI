@@ -1,0 +1,535 @@
+﻿/* =======================
+   GENERAL STYLES
+======================= */
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f6fa;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #2c3e50;
+    margin-bottom: 25px;
+    font-size: 28px;
+}
+
+    h1 img {
+        height: 50px;
+        vertical-align: middle;
+    }
+
+/* =======================
+   BUTTONS & INPUTS
+======================= */
+button {
+    cursor: pointer;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 15px;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+    button:hover {
+        background-color: #2980b9;
+    }
+
+    button:disabled {
+        background-color: #95a5a6;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+.btn-small {
+    font-size: 12px;
+    padding: 4px 8px;
+    margin-top: 6px;
+}
+
+input {
+    padding: 8px 10px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-right: 6px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    box-sizing: border-box;
+}
+
+    input:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 6px rgba(52, 152, 219, 0.5);
+    }
+
+/* -----------------------
+   Visual Check Comment Input
+----------------------- */
+.vc-comment {
+    width: 95%;
+    padding: 6px 8px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+    .vc-comment:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 6px rgba(52, 152, 219, 0.5);
+    }
+
+/* =======================
+   CUSTOM DROPDOWN
+======================= */
+.select-wrapper {
+    position: relative;
+    display: block;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+    .select-wrapper select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        width: 100%;
+        background-color: white;
+        border: 1px solid #ccc;
+        padding: 8px 12px;
+        font-size: 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        outline: none;
+        background-image: url("data:image/svg+xml;utf8,<svg fill='%236c7a89' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 16px;
+        transition: border 0.3s, box-shadow 0.3s;
+    }
+
+        .select-wrapper select:hover {
+            border-color: #3498db;
+        }
+
+        .select-wrapper select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 6px rgba(52, 152, 219, 0.5);
+        }
+
+/* =======================
+   LOADING OVERLAY
+======================= */
+#loadingOverlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.85);
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 9999;
+}
+
+    #loadingOverlay[aria-hidden="false"] {
+        display: flex;
+    }
+
+    #loadingOverlay .spinner img {
+        width: 80px;
+        height: 80px;
+    }
+
+.spinner {
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    position: relative;
+}
+
+    .spinner img {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+    }
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* =======================
+   CARDS & KPI
+======================= */
+.card, .product-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+.product-card {
+    display: block;
+    width: 30%;
+    margin-bottom: 10px;
+}
+
+    .product-card > div {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto auto;
+        gap: 16px;
+        align-items: flex-end;
+        width: 100%;
+    }
+
+        .product-card > div > div {
+            display: flex;
+            flex-direction: column;
+        }
+
+.product-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: #2c3e50;
+    display: inline;
+    white-space: nowrap;
+}
+
+.kpi-row {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+}
+
+.kpi-box {
+    background: #f0f0f0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    min-width: 80px;
+    text-align: center;
+    flex: 1;
+    transition: all 0.3s ease-in-out;
+}
+
+.kpi-pass {
+    background: #d4edda;
+}
+
+.kpi-fail {
+    background: #f8d7da;
+}
+
+.kpi-value {
+    font-size: 1.4em;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.kpi-pass .kpi-value {
+    color: green;
+}
+
+.kpi-fail .kpi-value {
+    color: red;
+}
+
+/* =======================
+   SERIAL WRAPPER & COPY BUTTON
+======================= */
+.serial-wrapper {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+#copySerialBtn {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 1em;
+    min-width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+    #copySerialBtn:hover {
+        background: #f0f0f0;
+    }
+
+    #copySerialBtn:active {
+        background: #e0e0e0;
+    }
+
+#copyProductBtn {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 1em;
+    min-width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+
+    #copyProductBtn:hover {
+        background: #f0f0f0;
+    }
+
+    #copyProductBtn:active {
+        background: #e0e0e0;
+    }
+
+.copy-feedback {
+    font-size: 0.9em;
+    color: #28a745;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+    .copy-feedback.show {
+        opacity: 1;
+    }
+
+/* =======================
+   RESULT WRAPPER & INPUT
+======================= */
+.result-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.result-input {
+    width: 80px;
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+/* =======================
+   TABLES
+======================= */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+thead th {
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+    padding: 8px;
+    background-color: #3498db;
+    color: white;
+    cursor: pointer;
+}
+
+tbody td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: center;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}
+
+.highlight {
+    outline: 3px solid #f39c12;
+}
+
+/* Visual Check table cell adjustment */
+/* Force Visual Check table text to LEFT */
+#visualCheckTable th,
+#visualCheckTable td {
+    text-align: left;
+}
+
+
+    #visualCheckTable td input.vc-comment {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+/* =======================
+   TABS
+======================= */
+.tab-container {
+    margin-bottom: 10px;
+}
+
+.tab-button {
+    background-color: #f1f1f1;
+    border: 1px solid #ddd;
+    outline: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-right: 2px;
+    font-weight: 500;
+    color: #2c3e50;
+    border-radius: 6px 6px 0 0;
+}
+
+    .tab-button.active {
+        background-color: #3498db;
+        color: white;
+        font-weight: 600;
+    }
+
+    .tab-button:hover:not(.active) {
+        background-color: #dfe6e9;
+    }
+
+/* =======================
+   COLLAPSIBLE
+======================= */
+.collapsible {
+    background: white;
+    cursor: pointer;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    text-align: left;
+    margin-top: 12px;
+    position: relative;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+    .collapsible .icon {
+        display: inline-block;
+        font-size: 16px;
+        color: #f1c40f;
+        transition: transform 0.3s;
+    }
+
+    .collapsible.active .icon {
+        transform: scale(1.2);
+        content: "★";
+    }
+
+    .collapsible:not(.active) .icon::after {
+        content: "☆";
+    }
+
+.content {
+    display: none;
+    padding: 15px 20px;
+    margin-top: 0;
+    background: white;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+/* =======================
+   CHART
+======================= */
+canvas {
+    max-width: 100%;
+}
+
+/* =======================
+   RESPONSIVE
+======================= */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 22px;
+        flex-direction: column;
+    }
+
+    .product-card > div {
+        grid-template-columns: 1fr;
+    }
+
+    .kpi-box {
+        min-width: 120px;
+    }
+
+    input, select, button {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .select-wrapper {
+        width: 100%;
+    }
+}
+
+#loadBtn {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1.6em;
+    min-width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+    #loadBtn:hover {
+        background: #f0f0f0;
+    }
+
+    #loadBtn:active {
+        background: #e0e0e0;
+    }

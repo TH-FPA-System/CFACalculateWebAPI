@@ -1,0 +1,364 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>BOM Visual Check with KPI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="css/CFACSS.css" rel="stylesheet" />
+    <link rel="icon" href="./Img/favicon.ico">
+    <!-- Use latest Html5Qrcode from CDN -->
+    <script src="scripts/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <h1><img src="./Img/FPALogo.png" alt="logo"> BOM Visual Check</h1>
+
+    <div class="product-card" role="region" aria-labelledby="prodHeader">
+        <div class="product-grid">
+
+            <!-- Serial -->
+            <div class="field">
+                <label for="serialInput"><strong>Serial No:</strong></label>
+                <div class="serial-wrapper">
+                    <input type="text" id="serialInput" placeholder="81370BUG777777" />
+                    <button id="copySerialBtn" title="Copy Serial No" style="display:none;">📋</button>
+                    <button id="scanBtn" title="Scan Barcode or QR" class="icon-btn">
+                        <img src="icon/barcode-scan.ico" alt="Scan" class="icon-img">
+                    </button>
+                </div>
+
+                <!-- Camera container -->
+                <div id="qr-reader" style="width:300px; display:none; margin-top:10px;"></div>
+
+                <div id="copyFeedback" class="copy-feedback">Copied!</div>
+            </div>
+
+            <!-- Task -->
+            <div class="field">
+                <label for="taskInput"><strong>Task:</strong></label>
+                <div class="select-wrapper">
+                    <select id="taskInput">
+                        <option value="3570">3570</option>
+                        <option value="4625">4625</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Load -->
+
+            <div class="field field-button">
+                <label>&nbsp;</label>
+                <button id="loadBtn" title="Load Results">🔄</button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner">
+            <img src="./Img/FPALogo.png" alt="logo">
+        </div>
+    </div>
+
+    <div class="kpi-row" id="kpiContainer" role="status" aria-live="polite"></div>
+
+    <div class="card">
+        <h3>Visual Check</h3>
+        <table id="visualCheckTable" aria-describedby="visualDesc" style="text-align: left;">
+            <caption id="visualDesc" style="display:none">Parts visual checks and results</caption>
+            <thead>
+                <tr><th>P/N</th><th>Description</th><th>Result</th><th>Comment</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <br />
+    <button id="saveResultTestBtn" disabled>Save Result Test</button>
+
+    <script>
+        const API_BASE = "./api/CFACal";
+        let lastData = { vVisualChecks: [] };
+        const timeoutMs = 15000;
+
+        const serialInput = document.getElementById("serialInput");
+        const taskInput = document.getElementById("taskInput");
+        const loadBtn = document.getElementById("loadBtn");
+        const saveBtn = document.getElementById("saveResultTestBtn");
+        const copySerialBtn = document.getElementById("copySerialBtn");
+        const copyFeedback = document.getElementById("copyFeedback");
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        const kpiContainer = document.getElementById("kpiContainer");
+        const tableBody = document.querySelector("#visualCheckTable tbody");
+        const scanBtn = document.getElementById("scanBtn");
+        const qrReader = document.getElementById("qr-reader");
+        let scanner;
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            loadingOverlay.style.display = show ? "flex" : "none";
+            loadingOverlay.setAttribute("aria-hidden", show ? "false" : "true");
+            loadBtn.disabled = show;
+            saveBtn.disabled = show || lastData.vVisualChecks.length === 0;
+        }
+
+        // Copy Serial No
+     
+function copySerialNo() {
+    const serial = serialInput.value.trim();
+    if (!serial) {
+        alert("Serial No is empty");
+        return;
+    }
+
+    // Modern Clipboard API (HTTPS / localhost)
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(serial)
+            .then(showCopyFeedback)
+            .catch(() => fallbackCopy(serial));
+    } else {
+        // HTTP / older browser fallback
+        fallbackCopy(serial);
+    }
+}
+
+function fallbackCopy(text) {
+    const tempInput = document.createElement("input");
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    tempInput.setSelectionRange(0, 99999); // mobile support
+
+    try {
+        document.execCommand("copy");
+        showCopyFeedback();
+    } catch (err) {
+        alert("Copy failed. Please copy manually.");
+    }
+
+    document.body.removeChild(tempInput);
+}
+
+function showCopyFeedback() {
+    copyFeedback.classList.add("show");
+    setTimeout(() => copyFeedback.classList.remove("show"), 2000);
+}
+
+
+
+        // Fetch with timeout
+        async function fetchWithTimeout(url, opts = {}, ms = timeoutMs) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), ms);
+            try {
+                opts.signal = controller.signal;
+                const r = await fetch(url, opts);
+                clearTimeout(id);
+                return r;
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
+        }
+
+        // Load BOM Visual
+        async function loadBOMVisual() {
+            const serial = serialInput.value.trim();
+            const task = taskInput.value;
+            if (serial.length < 10) { alert("Invalid Serial No"); serialInput.focus(); return; }
+
+            const CA = serial.substring(0, 5);
+            const SerialNo = serial.substring(5);
+
+            showLoading(true);
+            try {
+                const resp = await fetchWithTimeout(`${API_BASE}/GETBOMTest?CA=${encodeURIComponent(CA)}&SerialNo=${encodeURIComponent(SerialNo)}&Task=${encodeURIComponent(task)}`);
+                if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+                const data = await resp.json();
+                lastData.vVisualChecks = Array.isArray(data.vVisualChecks) ? data.vVisualChecks : [];
+                renderVisualCheck();
+                if (lastData.vVisualChecks.length === 0) alert("No visual checks returned for this serial/task.");
+            } catch (err) {
+                console.error(err);
+                if (err.name === 'AbortError') alert("Request timed out.");
+                else alert("Failed to load BOM visual check");
+            } finally {
+                showLoading(false);
+                saveBtn.disabled = lastData.vVisualChecks.length === 0;
+            }
+        }
+
+        // Update KPI
+        function updateKPICount() {
+            const total = lastData.vVisualChecks.length;
+            let pass = 0, fail = 0;
+            lastData.vVisualChecks.forEach(item => {
+                if (item.test_tag === 'VSCHK') item.result === "OK" ? pass++ : fail++;
+                else {
+                    const val = parseFloat(item.result);
+                    if (!isNaN(val) && item.lowerLimit != null && item.upperLimit != null && val >= item.lowerLimit && val <= item.upperLimit) pass++;
+                    else fail++;
+                }
+            });
+            kpiContainer.innerHTML = `
+                        <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
+                        <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
+                        <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
+                    `;
+        }
+
+        // Render visual check table
+        function renderVisualCheck() {
+            tableBody.innerHTML = "";
+            lastData.vVisualChecks.forEach((item, idx) => {
+                const tr = document.createElement("tr");
+                tr.dataset.index = idx;
+
+                const pnTd = document.createElement("td"); pnTd.textContent = item.part ?? "";
+                const descTd = document.createElement("td"); descTd.textContent = item.description ?? "";
+                const resTd = document.createElement("td");
+                const commTd = document.createElement("td");
+
+                // Comment input
+                const commentInput = document.createElement("input");
+                commentInput.type = "text";
+                commentInput.className = "vc-comment";
+                commentInput.placeholder = "Key comment here";
+                commentInput.value = item.comment ?? "";
+                commentInput.addEventListener("input", e => lastData.vVisualChecks[idx].comment = e.target.value);
+                commTd.appendChild(commentInput);
+
+                // Result input / checkbox
+                if (item.test_tag === 'LMCHK') {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "result-wrapper";
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.className = "result-input";
+                    input.value = item.result ?? "";
+                    input.addEventListener("input", e => {
+                        const v = e.target.value.trim();
+                        lastData.vVisualChecks[idx].result = v;
+                        const val = parseFloat(v);
+                        e.target.style.backgroundColor = (!isNaN(val) && item.lowerLimit != null && item.upperLimit != null && val >= item.lowerLimit && val <= item.upperLimit) ? "#d4edda" : "#f8d7da";
+                        updateKPICount();
+                    });
+                    const limits = document.createElement("span");
+                    limits.textContent = `[${item.lowerLimit ?? "-"} - ${item.upperLimit ?? "-"}]`;
+                    wrapper.appendChild(input); wrapper.appendChild(limits);
+                    resTd.appendChild(wrapper);
+                } else if (item.test_tag === 'VSCHK') {
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.checked = item.result === "OK";
+                    checkbox.addEventListener("change", e => {
+                        lastData.vVisualChecks[idx].result = e.target.checked ? "OK" : "NG";
+                        updateKPICount();
+                    });
+                    resTd.addEventListener("click", e => {
+                        if (e.target !== checkbox) {
+                            checkbox.checked = !checkbox.checked;
+                            lastData.vVisualChecks[idx].result = checkbox.checked ? "OK" : "NG";
+                            updateKPICount();
+                        }
+                    });
+                    resTd.appendChild(checkbox);
+                } else {
+                    const input = document.createElement("input");
+                    input.type = "text"; input.className = "result-input"; input.value = item.result ?? "";
+                    input.addEventListener("input", e => { lastData.vVisualChecks[idx].result = e.target.value; updateKPICount(); });
+                    resTd.appendChild(input);
+                }
+
+                tr.appendChild(pnTd); tr.appendChild(descTd); tr.appendChild(resTd); tr.appendChild(commTd);
+                tableBody.appendChild(tr);
+            });
+            updateKPICount();
+            saveBtn.disabled = lastData.vVisualChecks.length === 0;
+        }
+
+        // Save results
+        async function saveResults() {
+            const serial = serialInput.value.trim();
+            const task = taskInput.value.trim();
+            if (!serial || !task) return alert("Serial No and Task are required");
+            if (lastData.vVisualChecks.length === 0) return alert("No results to save");
+
+            const CA = serial.substring(0, 5);
+            const SerialNo = serial.substring(5);
+
+            const visualData = lastData.vVisualChecks.map(item => {
+                const resultStr = item.result ?? "";
+                const isVs = item.test_tag === 'VSCHK';
+                const passed = isVs ? (resultStr === "OK") : (!isNaN(resultStr) && item.lowerLimit != null && item.upperLimit != null && parseFloat(resultStr) >= item.lowerLimit && parseFloat(resultStr) <= item.upperLimit);
+                return { PartNo: item.part, ResultValue: resultStr, tstStatus: passed ? "P" : "F", Comment: item.comment ?? "" };
+            });
+
+            const payload = { CA, SerialNo, Task: task, vVisualResults: visualData, TypeInput: 'VSCHK' };
+            showLoading(true);
+            try {
+                const resp = await fetchWithTimeout(`${API_BASE}/SaveResultTest`, {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const resJson = await resp.json().catch(() => ({}));
+                alert(resp.ok ? (resJson.message || "Result saved successfully") : (resJson.message || `Error saving result (${resp.status})`));
+            } catch (err) {
+                console.error(err);
+                alert(err.name === 'AbortError' ? "Save request timed out" : "Error saving result");
+            } finally { showLoading(false); }
+        }
+
+        // Event wiring
+        loadBtn.addEventListener("click", loadBOMVisual);
+        saveBtn.addEventListener("click", saveResults);
+        copySerialBtn.addEventListener("click", copySerialNo);
+        serialInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); loadBOMVisual(); } });
+        serialInput.addEventListener("paste", () => setTimeout(() => serialInput.value = serialInput.value.trim(), 0));
+
+        // ======= Scanner integration =======
+        scanBtn.addEventListener("click", () => {
+            if (!scanner) {
+                qrReader.style.display = "block";
+                scanner = new Html5Qrcode("qr-reader");
+                scanner.start(
+                    { facingMode: "user" }, // Desktop-friendly
+                    { fps: 10, qrbox: 250, formatsToSupport: ["QR_CODE", "CODE_128", "CODE_39", "EAN_13", "UPC_A"] },
+                    decodedText => {
+                        serialInput.value = decodedText.trim();
+                        scanner.stop().catch(() => { });
+                        qrReader.style.display = "none";
+                        scanner = null;
+                    },
+                    errorMessage => {
+                        // ignore frequent parse errors
+                        // console.log("Scan error:", errorMessage);
+                    }
+                ).catch(err => {
+                    console.error("Scanner failed:", err);
+                    alert("Cannot start camera. Use HTTPS/localhost and a webcam.");
+                    qrReader.style.display = "none";
+                    scanner = null;
+                });
+            } else {
+                scanner.stop().catch(() => { });
+                qrReader.style.display = "none";
+                scanner = null;
+            }
+        });
+
+        function toggleCopyButton() {
+            const hasValue = serialInput.value.trim() !== "";
+            copySerialBtn.style.display = hasValue ? "inline-flex" : "none";
+        }
+        serialInput.addEventListener("input", toggleCopyButton);
+        serialInput.addEventListener("paste", () => {
+            setTimeout(() => {
+                serialInput.value = serialInput.value.trim();
+                toggleCopyButton();
+            }, 0);
+        });
+    </script>
+
+
+</body>
+</html>
