@@ -283,12 +283,11 @@ namespace CFACalculateWebAPI.Controllers
         }
 
         //https://localhost:44363/api/CFACal/GETBOMTestByExternal
-        //raw JSON
+        //raw JSON Ex.
         //   {
         //       "barcodeText": "81370BUG777777",
         //       "task": "3570"
         //   }
-
         private ParsedBarcode ParseBarcode(string barcodeText)
         {
             // Example expected: 81370BUG777777
