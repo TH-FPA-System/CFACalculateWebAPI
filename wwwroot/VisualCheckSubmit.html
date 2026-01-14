@@ -32,15 +32,18 @@
                 <div id="copyFeedback" class="copy-feedback">Copied!</div>
             </div>
 
-            <!-- Task -->
             <div class="field">
                 <label for="taskInput"><strong>Task:</strong></label>
                 <div class="select-wrapper">
-                    <select id="taskInput">
-                        <option value="6088">RH CFA</option>
-                    </select>
+                    <input list="taskList" id="taskInput" placeholder="Enter or select task" />
+                    <datalist id="taskList">
+                        <option value="6088" >RH CFA</option>
+                        <option value="8052" >BBQ CFA</option>
+                        <!-- Add more predefined tasks here -->
+                    </datalist>
                 </div>
             </div>
+
 
             <!-- Load -->
 
@@ -355,6 +358,26 @@ function showCopyFeedback() {
                 serialInput.value = serialInput.value.trim();
                 toggleCopyButton();
             }, 0);
+        });
+
+        // ===== Read query string and set default Task =====
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const taskFromUrl = getQueryParam("task");
+
+            if (taskFromUrl) {
+                taskInput.value = taskFromUrl;
+
+                // OPTIONAL: auto-load after task is set
+                // Uncomment if you want auto load when serial is already filled
+                // if (serialInput.value.trim().length >= 10) {
+                //     loadBOMVisual();
+                // }
+            }
         });
     </script>
 
