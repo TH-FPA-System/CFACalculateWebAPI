@@ -12,6 +12,8 @@
 <body>
     <h1><img src="./Img/FPALogo.png" alt="logo"> BOM Visual Check</h1>
 
+
+
     <div class="product-card" role="region" aria-labelledby="prodHeader">
         <div class="product-grid">
 
@@ -65,6 +67,13 @@
 
     <div class="card">
         <h3>Visual Check</h3>
+        <!-- Link to Part Description Management page -->
+        <!--<div style="margin: 8px 0;">
+            <a href="part-description-admin.html" target="_blank"
+               style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;  color: #3498db; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; ">
+                📝 Manage Part Descriptions
+            </a>
+        </div>-->
         <table id="visualCheckTable" aria-describedby="visualDesc" style="text-align: left;">
             <caption id="visualDesc" style="display:none">Parts visual checks and results</caption>
             <thead>
@@ -208,10 +217,10 @@
                 }
             });
             kpiContainer.innerHTML = `
-                                <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
-                                <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
-                                <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
-                            `;
+                                                <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
+                                                <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
+                                                <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
+                                            `;
         }
 
         // Render visual check table
