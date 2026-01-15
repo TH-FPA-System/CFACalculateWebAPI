@@ -37,8 +37,8 @@
                 <div class="select-wrapper">
                     <input list="taskList" id="taskInput" placeholder="Enter or select task" />
                     <datalist id="taskList">
-                        <option value="6088" >RH CFA</option>
-                        <option value="8052" >BBQ CFA</option>
+                        <option value="6088">RH CFA</option>
+                        <option value="8052">BBQ CFA</option>
                         <!-- Add more predefined tasks here -->
                     </datalist>
                 </div>
@@ -103,46 +103,46 @@
         }
 
         // Copy Serial No
-     
-function copySerialNo() {
-    const serial = serialInput.value.trim();
-    if (!serial) {
-        alert("Serial No is empty");
-        return;
-    }
 
-    // Modern Clipboard API (HTTPS / localhost)
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(serial)
-            .then(showCopyFeedback)
-            .catch(() => fallbackCopy(serial));
-    } else {
-        // HTTP / older browser fallback
-        fallbackCopy(serial);
-    }
-}
+        function copySerialNo() {
+            const serial = serialInput.value.trim();
+            if (!serial) {
+                alert("Serial No is empty");
+                return;
+            }
 
-function fallbackCopy(text) {
-    const tempInput = document.createElement("input");
-    tempInput.value = text;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    tempInput.setSelectionRange(0, 99999); // mobile support
+            // Modern Clipboard API (HTTPS / localhost)
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(serial)
+                    .then(showCopyFeedback)
+                    .catch(() => fallbackCopy(serial));
+            } else {
+                // HTTP / older browser fallback
+                fallbackCopy(serial);
+            }
+        }
 
-    try {
-        document.execCommand("copy");
-        showCopyFeedback();
-    } catch (err) {
-        alert("Copy failed. Please copy manually.");
-    }
+        function fallbackCopy(text) {
+            const tempInput = document.createElement("input");
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            tempInput.setSelectionRange(0, 99999); // mobile support
 
-    document.body.removeChild(tempInput);
-}
+            try {
+                document.execCommand("copy");
+                showCopyFeedback();
+            } catch (err) {
+                alert("Copy failed. Please copy manually.");
+            }
 
-function showCopyFeedback() {
-    copyFeedback.classList.add("show");
-    setTimeout(() => copyFeedback.classList.remove("show"), 2000);
-}
+            document.body.removeChild(tempInput);
+        }
+
+        function showCopyFeedback() {
+            copyFeedback.classList.add("show");
+            setTimeout(() => copyFeedback.classList.remove("show"), 2000);
+        }
 
 
 
@@ -201,31 +201,53 @@ function showCopyFeedback() {
                 }
             });
             kpiContainer.innerHTML = `
-                        <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
-                        <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
-                        <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
-                    `;
+                            <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
+                            <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
+                            <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
+                        `;
         }
 
         // Render visual check table
         function renderVisualCheck() {
+
+
+
             tableBody.innerHTML = "";
             lastData.vVisualChecks.forEach((item, idx) => {
                 const tr = document.createElement("tr");
                 tr.dataset.index = idx;
 
-                const pnTd = document.createElement("td"); pnTd.textContent = item.part ?? "";
-                const descTd = document.createElement("td"); descTd.textContent = item.description ?? "";
+                const pnTd = document.createElement("td");
+                pnTd.textContent = item.part ?? "";
+                pnTd.setAttribute("data-label", "P/N");
+
+                const descTd = document.createElement("td");
+                descTd.textContent = item.description ?? "";
+                descTd.setAttribute("data-label", "Description");
+
                 const resTd = document.createElement("td");
+                resTd.setAttribute("data-label", "Result");
+
                 const commTd = document.createElement("td");
+                commTd.setAttribute("data-label", "Comment");
+
 
                 // Comment input
-                const commentInput = document.createElement("input");
-                commentInput.type = "text";
+                const commentInput = document.createElement("textarea");
+                commentInput.rows = 2; // or 3
+
                 commentInput.className = "vc-comment";
                 commentInput.placeholder = "Key comment here";
                 commentInput.value = item.comment ?? "";
-                commentInput.addEventListener("input", e => lastData.vVisualChecks[idx].comment = e.target.value);
+                commentInput.addEventListener("input", e => {
+                    lastData.vVisualChecks[idx].comment = e.target.value;
+                });
+
+
+                commentInput.addEventListener("input", e => {
+                    lastData.vVisualChecks[idx].comment = e.target.value;
+                });
+
                 commTd.appendChild(commentInput);
 
                 // Result input / checkbox
@@ -251,19 +273,25 @@ function showCopyFeedback() {
                     const checkbox = document.createElement("input");
                     checkbox.type = "checkbox";
                     checkbox.checked = item.result === "OK";
+
+                    // Prevent double toggle
+                    checkbox.addEventListener("click", e => e.stopPropagation());
+
                     checkbox.addEventListener("change", e => {
                         lastData.vVisualChecks[idx].result = e.target.checked ? "OK" : "NG";
                         updateKPICount();
                     });
-                    resTd.addEventListener("click", e => {
-                        if (e.target !== checkbox) {
-                            checkbox.checked = !checkbox.checked;
-                            lastData.vVisualChecks[idx].result = checkbox.checked ? "OK" : "NG";
-                            updateKPICount();
-                        }
+
+                    // Click anywhere in cell toggles checkbox
+                    resTd.addEventListener("click", () => {
+                        checkbox.checked = !checkbox.checked;
+                        lastData.vVisualChecks[idx].result = checkbox.checked ? "OK" : "NG";
+                        updateKPICount();
                     });
+
                     resTd.appendChild(checkbox);
-                } else {
+                }
+else {
                     const input = document.createElement("input");
                     input.type = "text"; input.className = "result-input"; input.value = item.result ?? "";
                     input.addEventListener("input", e => { lastData.vVisualChecks[idx].result = e.target.value; updateKPICount(); });
@@ -368,19 +396,46 @@ function showCopyFeedback() {
 
         document.addEventListener("DOMContentLoaded", () => {
             const taskFromUrl = getQueryParam("task");
-
             if (taskFromUrl) {
                 taskInput.value = taskFromUrl;
-
-                // OPTIONAL: auto-load after task is set
-                // Uncomment if you want auto load when serial is already filled
-                // if (serialInput.value.trim().length >= 10) {
-                //     loadBOMVisual();
-                // }
             }
+
+            //// ===== Comment popup wiring =====
+            //window.commentOverlay = document.getElementById("commentOverlay");
+            //window.commentEditor = document.getElementById("commentEditor");
+            //window.closeCommentBtn = document.getElementById("closeCommentBtn");
+
+            //window.activeCommentInput = null;
+
+            //window.openCommentEditor = function (inputEl) {
+            //    activeCommentInput = inputEl;
+            //    commentEditor.value = inputEl.value;
+            //    commentOverlay.classList.add("show");
+            //    setTimeout(() => commentEditor.focus(), 100);
+            //};
+
+            //closeCommentBtn.addEventListener("click", () => {
+            //    if (activeCommentInput) {
+            //        activeCommentInput.value = commentEditor.value;
+            //        activeCommentInput.dispatchEvent(new Event("input"));
+            //    }
+            //    commentOverlay.classList.remove("show");
+            //});
         });
+
+
+
+
     </script>
 
+    <!-- Full Screen Comment Editor -->
+    <!--<div id="commentOverlay" class="comment-overlay">
+        <div class="comment-modal">
+            <h3>Enter Comment</h3>
+            <textarea id="commentEditor"></textarea>
+            <button id="closeCommentBtn">Done</button>
+        </div>
+    </div>-->
 
 </body>
 </html>

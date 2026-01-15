@@ -432,3 +432,53 @@ input[type="checkbox"] {
     .copy-feedback.show {
         opacity: 1;
     }
+
+
+/* Comment box */
+.vc-comment {
+    width: 100%;
+    min-height: 48px; /* Finger-friendly */
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 8px 10px;
+    box-sizing: border-box;
+    resize: vertical; /* Allow user to expand */
+    border-radius: 6px;
+}
+
+/* Tablet & mobile optimization */
+@media (max-width: 1024px) {
+    .vc-comment {
+        min-height: 64px;
+        font-size: 18px;
+    }
+}
+
+/* =====================================================
+   TABLE → CARD (TABLET & MOBILE)
+===================================================== */
+@media (max-width: 1024px) {
+
+    table thead {
+        display: none;
+    }
+
+    table, tbody, tr, td {
+        display: block;
+        width: 100%;
+    }
+
+        tbody tr {
+            background: #fff;
+            margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+}
