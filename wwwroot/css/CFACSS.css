@@ -482,3 +482,58 @@ input[type="checkbox"] {
             margin-bottom: 4px;
         }
 }
+.desc-short {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.desc-icon {
+    cursor: pointer;
+    margin-left: 6px;
+    font-size: 16px;
+}
+
+    .desc-icon:hover {
+        opacity: 0.7;
+    }
+
+/* Modal */
+.desc-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.desc-modal-content {
+    background: #fff;
+    padding: 16px;
+    max-width: 500px;
+    width: 90%;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+    .desc-modal-content h4 {
+        margin-top: 0;
+    }
+    .desc-modal-content p {
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+.desc-close {
+    float: right;
+    cursor: pointer;
+    font-size: 18px;
+}

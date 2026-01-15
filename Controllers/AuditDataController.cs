@@ -156,7 +156,7 @@ namespace CFACalculateWebAPI.Controllers
             {
                 // 1. Fetch visual check items from database
                 var visualChecks = await _service.GetVisualChecksByCAAsync(CA, Task);
-
+              
                 // 2. Prepare response
                 var response = new
                 {
@@ -244,68 +244,35 @@ namespace CFACalculateWebAPI.Controllers
             }
         }
 
-        private class ParsedBarcode
+        [HttpGet("PartDescription")]
+        public async Task<IActionResult> GetPartDescriptions(string? part)
         {
-            public bool IsValid { get; set; }
-            public string CA { get; set; } = "";
-            public string SerialNo { get; set; } = "";
+            var data = await _service.GetPartDescriptionsAsync(part);
+            return Ok(data);
         }
-        //MOBILE APP
-        [HttpPost("GETBOMTestByExternal")]
-        public async Task<IActionResult> GETBOMTestByExternal([FromBody] BarcodeScanRequest request)
+        [HttpGet("PartDescription/{part}")]
+        public async Task<IActionResult> GetPartDescription(string part)
         {
+            var data = await _service.GetPartDescriptionByPartAsync(part);
+            if (data == null) return NotFound();
+            return Ok(data);
+        }
+        [HttpPost("PartDescription")]
+        public async Task<IActionResult> SavePartDescription([FromBody] PartDescriptionDTO dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Part))
+                return BadRequest("Part is required");
 
-            if (string.IsNullOrWhiteSpace(request.BarcodeText))
-                return BadRequest(new { message = "Barcode text is required." });
-
-            if (string.IsNullOrWhiteSpace(request.Task))
-                return BadRequest(new { message = "Task is required." });
-
-            try
-            {
-                // ✅ Central parsing
-                var parsed = ParseBarcode(request.BarcodeText);
-
-                if (!parsed.IsValid)
-                    return BadRequest(new { message = "Invalid barcode format." });
-
-                // ✅ Reuse existing logic
-                return await GETBOMTest(parsed.CA, parsed.SerialNo, request.Task);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    message = "Failed to process barcode input.",
-                    detail = ex.Message
-                });
-            }
+            await _service.UpsertPartDescriptionAsync(dto);
+            return Ok(new { message = "Saved successfully" });
+        }
+        [HttpDelete("PartDescription/{part}")]
+        public async Task<IActionResult> DeletePartDescription(string part)
+        {
+            await _service.DeletePartDescriptionAsync(part);
+            return Ok(new { message = "Deleted successfully" });
         }
 
-        //https://localhost:44363/api/CFACal/GETBOMTestByExternal
-        //raw JSON Ex.
-        //   {
-        //       "barcodeText": "81370BUG777777",
-        //       "task": "3570"
-        //   }
-        private ParsedBarcode ParseBarcode(string barcodeText)
-        {
-            // Example expected: 81370BUG777777
-            // 81370  = CA (5 chars)
-            // BUG777777 = SerialNo (9 chars)
-
-            if (barcodeText.Length < 14)
-            {
-                return new ParsedBarcode { IsValid = false };
-            }
-
-            return new ParsedBarcode
-            {
-                IsValid = true,
-                CA = barcodeText.Substring(0, 5),
-                SerialNo = barcodeText.Substring(5, 9)
-            };
-        }
 
 
     }

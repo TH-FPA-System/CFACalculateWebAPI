@@ -1066,24 +1066,29 @@ ORDER BY ps.task_reference;
             using var conn = await GetOpenConnectionAsync();
 
             var sql = @"
-        SELECT
-            ps.component,
-            p.description,
-            p.class,
-            pt.lower_limit_value,
-            pt.upper_limit_value,
-            pt.test_tag
-        FROM part_structure ps
-        INNER JOIN part p ON p.part = ps.component
-        INNER JOIN part_test pt ON pt.part = p.part
-        INNER JOIN part_issue pi ON pi.part = p.part
-        WHERE ps.part = @CA
-          AND ps.task = @Task
-          AND ps.eff_start <= GETDATE()
-          AND ps.eff_close >= GETDATE()
-          AND pi.eff_start <= GETDATE()
-          AND pi.eff_close >= GETDATE()
-        ORDER BY ps.task_reference;
+       SELECT
+    ps.component,    
+    COALESCE(ld.description_long, p.description) AS description,
+    p.class,
+    pt.lower_limit_value,
+    pt.upper_limit_value,
+    pt.test_tag
+FROM part_structure ps
+INNER JOIN part p 
+    ON p.part = ps.component
+LEFT JOIN LISBOM_part_description ld
+    ON ld.part = p.part
+INNER JOIN part_test pt 
+    ON pt.part = p.part
+INNER JOIN part_issue pi 
+    ON pi.part = p.part
+WHERE ps.part = @CA
+  AND ps.task = @Task
+  AND ps.eff_start <= GETDATE()
+  AND ps.eff_close >= GETDATE()
+  AND pi.eff_start <= GETDATE()
+  AND pi.eff_close >= GETDATE()
+ORDER BY ps.task_reference;
     ";
 
             using var cmd = new SqlCommand(sql, (SqlConnection)conn);
@@ -1399,7 +1404,116 @@ ORDER BY ps.task_reference;
         }
 
 
+        //Manange LISBOM_part_description table
+        public async Task<string?> GetLongDescriptionByPartAsync(string partNumber)
+        {
+            if (string.IsNullOrWhiteSpace(partNumber))
+                throw new ArgumentException("Part number cannot be null or empty.", nameof(partNumber));
 
+            string sql = @"
+        SELECT description_long
+        FROM LISBOM_part_description
+        WHERE part = @part";
+
+            await using var conn = await GetOpenConnectionAsync();
+            await using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+
+            cmd.Parameters.Add("@part", SqlDbType.VarChar, 100).Value = partNumber;
+
+            object? result = await cmd.ExecuteScalarAsync();
+            return (result == null || result == DBNull.Value) ? null : result.ToString();
+        }
+
+        public async Task<List<PartDescriptionDTO>> GetPartDescriptionsAsync(string? partFilter)
+        {
+            var list = new List<PartDescriptionDTO>();
+
+            string sql = @"
+        SELECT part, description_long
+        FROM LISBOM_part_description
+        WHERE (@part IS NULL OR part LIKE '%' + @part + '%')
+        ORDER BY part";
+
+            await using var conn = await GetOpenConnectionAsync();
+            await using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+
+            cmd.Parameters.Add("@part", SqlDbType.VarChar, 100)
+                .Value = string.IsNullOrWhiteSpace(partFilter) ? DBNull.Value : partFilter;
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add(new PartDescriptionDTO
+                {
+                    Part = reader.GetString(0),
+                    Description_Long = reader.GetString(1)
+                });
+            }
+
+            return list;
+        }
+        public async Task<PartDescriptionDTO?> GetPartDescriptionByPartAsync(string part)
+        {
+            string sql = @"
+        SELECT part, description_long
+        FROM LISBOM_part_description
+        WHERE part = @part";
+
+            await using var conn = await GetOpenConnectionAsync();
+            await using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+
+            cmd.Parameters.Add("@part", SqlDbType.VarChar, 100).Value = part;
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new PartDescriptionDTO
+                {
+                    Part = reader.GetString(0),
+                    Description_Long = reader.GetString(1)
+                };
+            }
+
+            return null;
+        }
+        public async Task UpsertPartDescriptionAsync(PartDescriptionDTO dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Part))
+                throw new ArgumentException("Part is required");
+
+            string sql = @"
+        IF EXISTS (SELECT 1 FROM LISBOM_part_description WHERE part = @part)
+        BEGIN
+            UPDATE LISBOM_part_description
+            SET description_long = @desc,
+                updated_date = GETDATE()
+            WHERE part = @part
+        END
+        ELSE
+        BEGIN
+            INSERT INTO LISBOM_part_description (part, description_long)
+            VALUES (@part, @desc)
+        END";
+
+            await using var conn = await GetOpenConnectionAsync();
+            await using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+
+            cmd.Parameters.Add("@part", SqlDbType.VarChar, 100).Value = dto.Part;
+            cmd.Parameters.Add("@desc", SqlDbType.NVarChar).Value = dto.Description_Long;
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+        public async Task DeletePartDescriptionAsync(string part)
+        {
+            string sql = "DELETE FROM LISBOM_part_description WHERE part = @part";
+
+            await using var conn = await GetOpenConnectionAsync();
+            await using var cmd = new SqlCommand(sql, (SqlConnection)conn);
+
+            cmd.Parameters.Add("@part", SqlDbType.VarChar, 100).Value = part;
+
+            await cmd.ExecuteNonQueryAsync();
+        }
 
     }
 }

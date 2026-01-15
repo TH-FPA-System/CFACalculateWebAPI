@@ -75,6 +75,13 @@
     </div>
     <br />
     <button id="saveResultTestBtn" disabled>Save Result Test</button>
+    <div id="descModal" class="desc-modal">
+        <div class="desc-modal-content">
+            <span class="desc-close" id="descClose">✖</span>
+            <h4>Description</h4>
+            <p id="descModalText"></p>
+        </div>
+    </div>
 
     <script>
         const API_BASE = "./api/CFACal";
@@ -201,10 +208,10 @@
                 }
             });
             kpiContainer.innerHTML = `
-                            <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
-                            <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
-                            <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
-                        `;
+                                <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
+                                <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
+                                <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
+                            `;
         }
 
         // Render visual check table
@@ -222,8 +229,33 @@
                 pnTd.setAttribute("data-label", "P/N");
 
                 const descTd = document.createElement("td");
-                descTd.textContent = item.description ?? "";
                 descTd.setAttribute("data-label", "Description");
+
+                const fullDesc = item.description ?? "";
+
+                // Short text (30 chars)
+                const shortSpan = document.createElement("span");
+                shortSpan.className = "desc-short";
+                shortSpan.textContent = fullDesc.length >= 30
+                    ? fullDesc.substring(0, 30) + "..."
+                    : fullDesc;
+
+                // Info icon
+                const infoIcon = document.createElement("span");
+                infoIcon.className = "desc-icon";
+                infoIcon.title = "View full description";
+                infoIcon.textContent = "ℹ️";
+
+                infoIcon.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    openDescModal(fullDesc);
+                });
+
+                descTd.appendChild(shortSpan);
+                if (fullDesc.length >= 30) {
+                    descTd.appendChild(infoIcon);
+                }
+
 
                 const resTd = document.createElement("td");
                 resTd.setAttribute("data-label", "Result");
@@ -291,7 +323,7 @@
 
                     resTd.appendChild(checkbox);
                 }
-else {
+                else {
                     const input = document.createElement("input");
                     input.type = "text"; input.className = "result-input"; input.value = item.result ?? "";
                     input.addEventListener("input", e => { lastData.vVisualChecks[idx].result = e.target.value; updateKPICount(); });
@@ -400,42 +432,32 @@ else {
                 taskInput.value = taskFromUrl;
             }
 
-            //// ===== Comment popup wiring =====
-            //window.commentOverlay = document.getElementById("commentOverlay");
-            //window.commentEditor = document.getElementById("commentEditor");
-            //window.closeCommentBtn = document.getElementById("closeCommentBtn");
 
-            //window.activeCommentInput = null;
-
-            //window.openCommentEditor = function (inputEl) {
-            //    activeCommentInput = inputEl;
-            //    commentEditor.value = inputEl.value;
-            //    commentOverlay.classList.add("show");
-            //    setTimeout(() => commentEditor.focus(), 100);
-            //};
-
-            //closeCommentBtn.addEventListener("click", () => {
-            //    if (activeCommentInput) {
-            //        activeCommentInput.value = commentEditor.value;
-            //        activeCommentInput.dispatchEvent(new Event("input"));
-            //    }
-            //    commentOverlay.classList.remove("show");
-            //});
         });
 
 
+        const descModal = document.getElementById("descModal");
+        const descModalText = document.getElementById("descModalText");
+        const descClose = document.getElementById("descClose");
+
+        function openDescModal(text) {
+            descModalText.textContent = text;
+            descModal.style.display = "flex";
+        }
+
+        descClose.addEventListener("click", () => {
+            descModal.style.display = "none";
+        });
+
+        descModal.addEventListener("click", (e) => {
+            if (e.target === descModal) {
+                descModal.style.display = "none";
+            }
+        });
 
 
     </script>
 
-    <!-- Full Screen Comment Editor -->
-    <!--<div id="commentOverlay" class="comment-overlay">
-        <div class="comment-modal">
-            <h3>Enter Comment</h3>
-            <textarea id="commentEditor"></textarea>
-            <button id="closeCommentBtn">Done</button>
-        </div>
-    </div>-->
 
 </body>
 </html>
