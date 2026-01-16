@@ -1065,6 +1065,32 @@ ORDER BY ps.task_reference;
 
             using var conn = await GetOpenConnectionAsync();
 
+//            var sql = @"
+//       SELECT
+//    ps.component,    
+//    COALESCE(ld.description_long, p.description) AS description,
+//    p.class,
+//    pt.lower_limit_value,
+//    pt.upper_limit_value,
+//    pt.test_tag
+//FROM part_structure ps
+//INNER JOIN part p 
+//    ON p.part = ps.component
+//LEFT JOIN LISBOM_part_description ld
+//    ON ld.part = p.part
+//INNER JOIN part_test pt 
+//    ON pt.part = p.part
+//INNER JOIN part_issue pi 
+//    ON pi.part = p.part
+//WHERE ps.part = @CA
+//  AND ps.task = @Task
+//  AND ps.eff_start <= GETDATE()
+//  AND ps.eff_close >= GETDATE()
+//  AND pi.eff_start <= GETDATE()
+//  AND pi.eff_close >= GETDATE()
+//ORDER BY ps.task_reference;
+//    ";
+            //LIS TABLE LOCAL
             var sql = @"
        SELECT
     ps.component,    
@@ -1073,14 +1099,14 @@ ORDER BY ps.task_reference;
     pt.lower_limit_value,
     pt.upper_limit_value,
     pt.test_tag
-FROM part_structure ps
-INNER JOIN part p 
+FROM LISBOM_part_structure ps
+INNER JOIN LISBOM_part p 
     ON p.part = ps.component
 LEFT JOIN LISBOM_part_description ld
     ON ld.part = p.part
-INNER JOIN part_test pt 
+INNER JOIN LISBOM_part_test pt 
     ON pt.part = p.part
-INNER JOIN part_issue pi 
+INNER JOIN LISBOM_part_issue pi 
     ON pi.part = p.part
 WHERE ps.part = @CA
   AND ps.task = @Task
@@ -1090,7 +1116,6 @@ WHERE ps.part = @CA
   AND pi.eff_close >= GETDATE()
 ORDER BY ps.task_reference;
     ";
-
             using var cmd = new SqlCommand(sql, (SqlConnection)conn);
             cmd.Parameters.AddWithValue("@CA", CA);
             cmd.Parameters.AddWithValue("@Task", task);
@@ -1161,9 +1186,9 @@ ORDER BY ps.task_reference;
                 // Build the SQL Insert Statement for test_result
                 var sql = @"
         INSERT INTO test_result 
-            (part, serial, task, task_reference, run_number, test_part, date_tested, test_result, test_status, station)
+            (part, serial, task, task_reference, run_number, test_part, date_tested, test_result, test_status, station,test_fault)
         VALUES 
-            (@Part, @Serial, @Task, @TaskReference, @RunNumber, @TestPart, GETDATE(), @TestResult, @TestStatus, @Station)";
+            (@Part, @Serial, @Task, @TaskReference, @RunNumber, @TestPart, GETDATE(), @TestResult, @TestStatus, @Station,@test_fault)";
 
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = sql;
@@ -1171,7 +1196,7 @@ ORDER BY ps.task_reference;
 
                 // Helper method to add parameters to the command
                 void AddTestResultParameters(DbCommand command, string part, string serial, string task, string taskReference,
-                                             string runNumber, string testPart, string testResult, string testStatus, string station)
+                                             string runNumber, string testPart, string testResult, string testStatus, string station,string txtcomments)
                 {
                     command.Parameters.Clear();
                     command.Parameters.Add(new SqlParameter("@Part", part ?? ""));
@@ -1183,6 +1208,8 @@ ORDER BY ps.task_reference;
                     command.Parameters.Add(new SqlParameter("@TestResult", testResult ?? ""));
                     command.Parameters.Add(new SqlParameter("@TestStatus", testStatus ?? ""));
                     command.Parameters.Add(new SqlParameter("@Station", station ?? ""));
+                    command.Parameters.Add(new SqlParameter("@test_fault", txtcomments ?? ""));
+                    
                 }
 
                 // Insert for vVisualResults
@@ -1193,9 +1220,10 @@ ORDER BY ps.task_reference;
                         string testPart = visualResult.PartNo ?? "";
                         string testResult = visualResult.ResultValue ?? "";
                         string testStatus = visualResult.tstStatus ?? "";
-             
+                        string txtComments = visualResult.Comment ?? "";
+
                         // Set parameters and execute the insert command for each visual result
-                        AddTestResultParameters(cmd, partCa, SerialNo, taskNo, "000", runNo, testPart, testResult, testStatus, "1");
+                        AddTestResultParameters(cmd, partCa, SerialNo, taskNo, "000", runNo, testPart, testResult, testStatus, "1", txtComments);
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
@@ -1208,9 +1236,10 @@ ORDER BY ps.task_reference;
                         string testPart = autoResult.PartNo ?? "";
                         string testResult = autoResult.ResultValue ?? "";
                         string testStatus = autoResult.tstStatus ?? "";
+                        string txtComments = autoResult.Comment ?? "";
 
                         // Set parameters and execute the insert command for each auto result
-                        AddTestResultParameters(cmd, partCa, SerialNo, taskNo, "000", runNo, testPart, testResult, testStatus, "1");
+                        AddTestResultParameters(cmd, partCa, SerialNo, taskNo, "000", runNo, testPart, testResult, testStatus, "1", txtComments);
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
