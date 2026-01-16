@@ -147,7 +147,7 @@ namespace CFACalculateWebAPI.Controllers
         }
 
         [HttpGet("GETBOMTest")]
-        public async Task<IActionResult> GETBOMTest(string? CA, string? SerialNo, string? Task)
+        public async Task<IActionResult> GETBOMTest(string? CA, string? SerialNo, string? Task, string? LISBOM)
         {
             if (string.IsNullOrEmpty(CA) || string.IsNullOrEmpty(Task))
                 return BadRequest("CA and Task are required.");
@@ -155,7 +155,7 @@ namespace CFACalculateWebAPI.Controllers
             try
             {
                 // 1. Fetch visual check items from database
-                var visualChecks = await _service.GetVisualChecksByCAAsync(CA, Task);
+                var visualChecks = await _service.GetVisualChecksByCAAsync(CA, Task, LISBOM);
               
                 // 2. Prepare response
                 var response = new

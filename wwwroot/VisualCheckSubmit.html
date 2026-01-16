@@ -10,10 +10,13 @@
     <script src="scripts/html5-qrcode.min.js"></script>
 </head>
 <body>
-    <h1><img src="./Img/FPALogo.png" alt="logo"> BOM Visual Check</h1>
+    <h1>
+        <img src="./Img/FPALogo.png" alt="logo">
+        BOM Visual Check
+        
+    </h1>
 
-
-
+    
     <div class="product-card" role="region" aria-labelledby="prodHeader">
         <div class="product-grid">
 
@@ -46,6 +49,19 @@
                 </div>
             </div>
 
+            <div class="field" id="lisbomField">
+                <label for="lisbomInput"><strong>LIS BOM:</strong></label>
+                <div class="select-wrapper">
+                    <input list="lisbomList"
+                           id="lisbomInput"
+                           class="lisbom-small"
+                           placeholder="Y/N" />
+                    <datalist id="lisbomList">
+                        <option value="Y">Yes</option>
+                        <option value="N">No</option>
+                    </datalist>
+                </div>
+            </div>
 
             <!-- Load -->
 
@@ -66,14 +82,16 @@
     <div class="kpi-row" id="kpiContainer" role="status" aria-live="polite"></div>
 
     <div class="card">
-        <h3>Visual Check</h3>
+        <h3> Test List <span id="lisbomBadge" class="lisbom-badge" style="display:none;">LIS BOM</span> </h3>
+        <!--<h3>Visual Check</h3>-->
+
         <!-- Link to Part Description Management page -->
         <!--<div style="margin: 8px 0;">
-            <a href="part-description-admin.html" target="_blank"
-               style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;  color: #3498db; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; ">
-                📝 Manage Part Descriptions
-            </a>
-        </div>-->
+        <a href="part-description-admin.html" target="_blank"
+           style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;  color: #3498db; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; ">
+            📝 Manage Part Descriptions
+        </a>
+    </div>-->
         <table id="visualCheckTable" aria-describedby="visualDesc" style="text-align: left;">
             <caption id="visualDesc" style="display:none">Parts visual checks and results</caption>
             <thead>
@@ -108,6 +126,7 @@
         const tableBody = document.querySelector("#visualCheckTable tbody");
         const scanBtn = document.getElementById("scanBtn");
         const qrReader = document.getElementById("qr-reader");
+        const lisbomInput = document.getElementById("lisbomInput");
         let scanner;
 
         // Show/hide loading overlay
@@ -180,29 +199,60 @@
         // Load BOM Visual
         async function loadBOMVisual() {
             const serial = serialInput.value.trim();
-            const task = taskInput.value;
-            if (serial.length < 10) { alert("Invalid Serial No"); serialInput.focus(); return; }
+            const task = taskInput.value.trim();
+            const lisbom =
+                ["Y", "N"].includes(lisbomInput.value.trim().toUpperCase())
+                    ? lisbomInput.value.trim().toUpperCase()
+                    : "N";
+
+
+            if (serial.length < 10) {
+                alert("Invalid Serial No");
+                serialInput.focus();
+                return;
+            }
+
+            if (!task) {
+                alert("Task is required");
+                taskInput.focus();
+                return;
+            }
+
+            if (lisbom !== "Y" && lisbom !== "N") {
+                alert("LIS BOM must be Y or N");
+                lisbomInput.focus();
+                return;
+            }
 
             const CA = serial.substring(0, 5);
             const SerialNo = serial.substring(5);
 
             showLoading(true);
             try {
-                const resp = await fetchWithTimeout(`${API_BASE}/GETBOMTest?CA=${encodeURIComponent(CA)}&SerialNo=${encodeURIComponent(SerialNo)}&Task=${encodeURIComponent(task)}`);
+                const resp = await fetchWithTimeout(
+                    `${API_BASE}/GETBOMTest?CA=${encodeURIComponent(CA)}&SerialNo=${encodeURIComponent(SerialNo)}&Task=${encodeURIComponent(task)}&LISBOM=${encodeURIComponent(lisbom)}`
+                );
+
                 if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+
                 const data = await resp.json();
                 lastData.vVisualChecks = Array.isArray(data.vVisualChecks) ? data.vVisualChecks : [];
                 renderVisualCheck();
-                if (lastData.vVisualChecks.length === 0) alert("No visual checks returned for this serial/task.");
+
+                if (lastData.vVisualChecks.length === 0) {
+                    alert("No visual checks returned for this serial/task.");
+                }
             } catch (err) {
                 console.error(err);
-                if (err.name === 'AbortError') alert("Request timed out.");
-                else alert("Failed to load BOM visual check");
+                alert(err.name === "AbortError"
+                    ? "Request timed out."
+                    : "Failed to load BOM visual check");
             } finally {
                 showLoading(false);
                 saveBtn.disabled = lastData.vVisualChecks.length === 0;
             }
         }
+
 
         // Update KPI
         function updateKPICount() {
@@ -217,10 +267,10 @@
                 }
             });
             kpiContainer.innerHTML = `
-                                                <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
-                                                <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
-                                                <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
-                                            `;
+                                                            <div class="kpi-box">Total<div class="kpi-value">${total}</div></div>
+                                                            <div class="kpi-box kpi-pass">Pass<div class="kpi-value">${pass}</div></div>
+                                                            <div class="kpi-box kpi-fail">Fail<div class="kpi-value">${fail}</div></div>
+                                                        `;
         }
 
         // Render visual check table
@@ -436,12 +486,38 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const taskFromUrl = getQueryParam("task");
+
+            const params = new URLSearchParams(window.location.search);
+
+            // ---- TASK ----
+            const taskFromUrl = params.get("task");
             if (taskFromUrl) {
                 taskInput.value = taskFromUrl;
             }
 
+            // ---- LISBOM (default = N) ----
+            const lisbomFromUrl = params.get("lisbom");
+            const lisbom =
+                ["Y", "N"].includes((lisbomFromUrl || "").toUpperCase())
+                    ? lisbomFromUrl.toUpperCase()
+                    : "N";
 
+            lisbomInput.value = lisbom;
+
+            // ---- HIDE LISBOM FIELD ----
+            const lisbomField = document.getElementById("lisbomField");
+            if (lisbomField) {
+                lisbomField.style.display = "none";
+            }
+
+            // ---- SHOW BADGE IF Y ----
+            const lisbomBadge = document.getElementById("lisbomBadge");
+            if (lisbom === "Y" && lisbomBadge) {
+                lisbomBadge.style.display = "inline-block";
+            }
+
+            // 🔍 DEBUG (optional)
+            console.log("LISBOM =", lisbom);
         });
 
 

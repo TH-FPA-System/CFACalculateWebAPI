@@ -1056,7 +1056,8 @@ ORDER BY ps.task_reference;
 
         public async Task<List<VisualCheckItem>> GetVisualChecksByCAAsync(
       string? CA,
-      string? task)
+      string? task,
+            string? LISBOM)
         {
             var visualChecks = new List<VisualCheckItem>();
 
@@ -1064,34 +1065,11 @@ ORDER BY ps.task_reference;
                 return visualChecks;
 
             using var conn = await GetOpenConnectionAsync();
-
-//            var sql = @"
-//       SELECT
-//    ps.component,    
-//    COALESCE(ld.description_long, p.description) AS description,
-//    p.class,
-//    pt.lower_limit_value,
-//    pt.upper_limit_value,
-//    pt.test_tag
-//FROM part_structure ps
-//INNER JOIN part p 
-//    ON p.part = ps.component
-//LEFT JOIN LISBOM_part_description ld
-//    ON ld.part = p.part
-//INNER JOIN part_test pt 
-//    ON pt.part = p.part
-//INNER JOIN part_issue pi 
-//    ON pi.part = p.part
-//WHERE ps.part = @CA
-//  AND ps.task = @Task
-//  AND ps.eff_start <= GETDATE()
-//  AND ps.eff_close >= GETDATE()
-//  AND pi.eff_start <= GETDATE()
-//  AND pi.eff_close >= GETDATE()
-//ORDER BY ps.task_reference;
-//    ";
-            //LIS TABLE LOCAL
-            var sql = @"
+            var sql = "";
+            if (LISBOM == "Y")
+            {
+                //LIS TABLE LOCAL
+                 sql = @"
        SELECT
     ps.component,    
     COALESCE(ld.description_long, p.description) AS description,
@@ -1116,6 +1094,39 @@ WHERE ps.part = @CA
   AND pi.eff_close >= GETDATE()
 ORDER BY ps.task_reference;
     ";
+            }
+            else
+            {
+                 sql = @"
+                       SELECT
+                    ps.component,    
+                    COALESCE(ld.description_long, p.description) AS description,
+                    p.class,
+                    pt.lower_limit_value,
+                    pt.upper_limit_value,
+                    pt.test_tag
+                FROM part_structure ps
+                INNER JOIN part p 
+                    ON p.part = ps.component
+                LEFT JOIN LISBOM_part_description ld
+                    ON ld.part = p.part
+                INNER JOIN part_test pt 
+                    ON pt.part = p.part
+                INNER JOIN part_issue pi 
+                    ON pi.part = p.part
+                WHERE ps.part = @CA
+                  AND ps.task = @Task
+                  AND ps.eff_start <= GETDATE()
+                  AND ps.eff_close >= GETDATE()
+                  AND pi.eff_start <= GETDATE()
+                  AND pi.eff_close >= GETDATE()
+                ORDER BY ps.task_reference;
+                    ";
+            }
+
+
+
+           
             using var cmd = new SqlCommand(sql, (SqlConnection)conn);
             cmd.Parameters.AddWithValue("@CA", CA);
             cmd.Parameters.AddWithValue("@Task", task);
