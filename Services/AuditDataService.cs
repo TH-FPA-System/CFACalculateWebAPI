@@ -851,18 +851,18 @@ WHERE auditid = {(string.IsNullOrEmpty(auditId)
             var sql = new StringBuilder(@"
 WITH LatestRun AS (
     SELECT tsl.*
-    FROM test_result_lis tsl
+    FROM test_result_clean tsl
     INNER JOIN (
-        SELECT test_part, serial, test_info1, test_unit_id,
+        SELECT test_part, serial, test_info1, test_unit,
                MAX(run_number) AS max_run
-        FROM test_result_lis
+        FROM test_result_clean
         WHERE test_part = '595130'
           AND serial = @Serial
-        GROUP BY test_part, serial, test_info1, test_unit_id
+        GROUP BY test_part, serial, test_info1, test_unit
     ) lm ON tsl.test_part = lm.test_part
          AND tsl.serial = lm.serial
          AND tsl.test_info1 = lm.test_info1
-         AND tsl.test_unit_id = lm.test_unit_id
+         AND tsl.test_unit = lm.test_unit
          AND tsl.run_number = lm.max_run
 )
 SELECT
@@ -895,7 +895,7 @@ WHERE ps2.part = @ParentPart
             }
 
             sql.AppendLine(@"
-  AND tsl.test_unit_id = 'Celsius'
+  AND tsl.test_unit = 'mL/s'
   AND ps2.task = @TaskNo
   AND ps.eff_start <= GETDATE()
   AND ps.eff_close >= GETDATE()
