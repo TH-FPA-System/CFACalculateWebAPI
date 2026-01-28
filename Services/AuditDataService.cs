@@ -1085,7 +1085,7 @@ LEFT JOIN LISBOM_part_description ld
 INNER JOIN LISBOM_part_test pt 
     ON pt.part = p.part
 INNER JOIN LISBOM_part_issue pi 
-    ON pi.part = p.part
+    ON pi.part = p.part and pi.part_issue = pt.part_issue
 WHERE ps.part = @CA
   AND ps.task = @Task
   AND ps.eff_start <= GETDATE()
@@ -1113,7 +1113,7 @@ ORDER BY ps.task_reference;
                 INNER JOIN part_test pt 
                     ON pt.part = p.part
                 INNER JOIN part_issue pi 
-                    ON pi.part = p.part
+                    ON pi.part = p.part and pi.part_issue = pt.part_issue
                 WHERE ps.part = @CA
                   AND ps.task = @Task
                   AND ps.eff_start <= GETDATE()
