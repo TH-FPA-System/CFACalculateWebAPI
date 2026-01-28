@@ -266,12 +266,16 @@ namespace CFACalculateWebAPI.Controllers
             await _service.UpsertPartDescriptionAsync(dto);
             return Ok(new { message = "Saved successfully" });
         }
-        [HttpDelete("PartDescription/{part}")]
-        public async Task<IActionResult> DeletePartDescription(string part)
+        [HttpPost("PartDescription/Delete")]
+        public async Task<IActionResult> DeletePartDescription([FromBody] PartDescriptionDTO dto)
         {
-            await _service.DeletePartDescriptionAsync(part);
+            if (string.IsNullOrWhiteSpace(dto.Part))
+                return BadRequest("Part is required");
+
+            await _service.DeletePartDescriptionAsync(dto.Part);
             return Ok(new { message = "Deleted successfully" });
         }
+
 
 
 

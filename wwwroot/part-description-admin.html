@@ -233,9 +233,16 @@
 
         async function del(part) {
             if (!confirm("Delete " + part + "?")) return;
-            await fetch(API + "/" + encodeURIComponent(part), { method: "DELETE" });
+
+            await fetch(API + "/Delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ part })
+            });
+
             load();
         }
+
 
         function clearForm() {
             partInput.value = "";
