@@ -9,5 +9,8 @@ public class SaveTestResultDTO
     public string? SerialNo { get; set; }  // new
     public string? Task { get; set; }
     public string? TypeInput { get; set; }  // new
+
+
+
 }
 

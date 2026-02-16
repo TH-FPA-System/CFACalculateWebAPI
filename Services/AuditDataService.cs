@@ -1166,54 +1166,44 @@ ORDER BY ps.task_reference;
         {
             bool isSuccess = false;
 
-            // Remove leading placeholder item if present (first element null or all fields empty)
-            if (result?.vVisualResults != null && result.vVisualResults.Count > 0)
+            // Remove first placeholder items if they exist
+            void RemovePlaceholder<T>(List<T> list) where T : class
             {
-                var first = result.vVisualResults[0];
-                bool isEmptyFirst = first == null ||
-                    (string.IsNullOrWhiteSpace(first.PartNo) &&
-                     string.IsNullOrWhiteSpace(first.ResultValue) &&
-                     string.IsNullOrWhiteSpace(first.tstStatus) &&
-                     string.IsNullOrWhiteSpace(first.Comment));
-
-                if (isEmptyFirst)
-                    result.vVisualResults.RemoveAt(0);
+                if (list != null && list.Count > 0)
+                {
+                    var first = list[0];
+                    bool isEmpty = first == null;
+                    if (!isEmpty)
+                    {
+                        var props = first.GetType().GetProperties();
+                        isEmpty = props.All(p => p.GetValue(first) is string s && string.IsNullOrWhiteSpace(s));
+                    }
+                    if (isEmpty)
+                        list.RemoveAt(0);
+                }
             }
 
-            if (result?.vAutoResults != null && result.vAutoResults.Count > 0)
-            {
-                var firstAuto = result.vAutoResults[0];
-                bool isEmptyFirstAuto = firstAuto == null ||
-                    (string.IsNullOrWhiteSpace(firstAuto.PartNo) &&
-                     string.IsNullOrWhiteSpace(firstAuto.ResultValue) &&
-                     string.IsNullOrWhiteSpace(firstAuto.tstStatus) &&
-                     string.IsNullOrWhiteSpace(firstAuto.Comment));
-
-                if (isEmptyFirstAuto)
-                    result.vAutoResults.RemoveAt(0);
-            }
+            RemovePlaceholder(result?.vVisualResults);
+            RemovePlaceholder(result?.vAutoResults);
 
             using var conn = await GetOpenConnectionAsync();
-
-            // Start a transaction to ensure all operations are atomic
             using var transaction = await conn.BeginTransactionAsync();
 
             try
             {
-                // Build the SQL Insert Statement for test_result
-                var sql = @"
-        INSERT INTO test_result 
-            (part, serial, task, task_reference, run_number, test_part, date_tested, test_result, test_status, station,test_fault)
-        VALUES 
-            (@Part, @Serial, @Task, @TaskReference, @RunNumber, @TestPart, GETDATE(), @TestResult, @TestStatus, @Station,@test_fault)";
+                // 1️⃣ Insert into original test_result table
+                var sqlOriginal = @"
+INSERT INTO test_result 
+    (part, serial, task, task_reference, run_number, test_part, date_tested, test_result, test_status, station, test_fault)
+VALUES 
+    (@Part, @Serial, @Task, @TaskReference, @RunNumber, @TestPart, GETDATE(), @TestResult, @TestStatus, @Station, @test_fault)";
 
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = sql;
-                cmd.Transaction = transaction; // Associate the command with the transaction
+                using var cmdOriginal = conn.CreateCommand();
+                cmdOriginal.CommandText = sqlOriginal;
+                cmdOriginal.Transaction = transaction;
 
-                // Helper method to add parameters to the command
                 void AddTestResultParameters(DbCommand command, string part, string serial, string task, string taskReference,
-                                             string runNumber, string testPart, string testResult, string testStatus, string station,string txtcomments)
+                                             string runNumber, string testPart, string testResult, string testStatus, string station, string txtComments)
                 {
                     command.Parameters.Clear();
                     command.Parameters.Add(new SqlParameter("@Part", part ?? ""));
@@ -1225,57 +1215,102 @@ ORDER BY ps.task_reference;
                     command.Parameters.Add(new SqlParameter("@TestResult", testResult ?? ""));
                     command.Parameters.Add(new SqlParameter("@TestStatus", testStatus ?? ""));
                     command.Parameters.Add(new SqlParameter("@Station", station ?? ""));
-                    command.Parameters.Add(new SqlParameter("@test_fault", txtcomments ?? ""));
-                    
+                    command.Parameters.Add(new SqlParameter("@test_fault", txtComments ?? ""));
                 }
 
-                // Insert for vVisualResults
+                // Insert all vVisualResults
                 if (result.vVisualResults != null && result.vVisualResults.Any())
                 {
-                    foreach (var visualResult in result.vVisualResults)
+                    foreach (var visual in result.vVisualResults)
                     {
-                        string testPart = visualResult.PartNo ?? "";
-                        string testResult = visualResult.ResultValue ?? "";
-                        string testStatus = visualResult.tstStatus ?? "";
-                        string txtComments = visualResult.Comment ?? "";
-
-                        // Set parameters and execute the insert command for each visual result
-                        AddTestResultParameters(cmd, partCa, SerialNo, taskNo, "000", runNo, testPart, testResult, testStatus, "1", txtComments);
-                        await cmd.ExecuteNonQueryAsync();
+                        AddTestResultParameters(cmdOriginal, partCa, SerialNo, taskNo, "000", runNo,
+                                                visual.PartNo, visual.ResultValue, visual.tstStatus, "1", visual.Comment);
+                        await cmdOriginal.ExecuteNonQueryAsync();
                     }
                 }
 
-                // Insert for vAutoResults
+                // Insert all vAutoResults
                 if (result.vAutoResults != null && result.vAutoResults.Any())
                 {
-                    foreach (var autoResult in result.vAutoResults)
+                    foreach (var auto in result.vAutoResults)
                     {
-                        string testPart = autoResult.PartNo ?? "";
-                        string testResult = autoResult.ResultValue ?? "";
-                        string testStatus = autoResult.tstStatus ?? "";
-                        string txtComments = autoResult.Comment ?? "";
-
-                        // Set parameters and execute the insert command for each auto result
-                        AddTestResultParameters(cmd, partCa, SerialNo, taskNo, "000", runNo, testPart, testResult, testStatus, "1", txtComments);
-                        await cmd.ExecuteNonQueryAsync();
+                        AddTestResultParameters(cmdOriginal, partCa, SerialNo, taskNo, "000", runNo,
+                                                auto.PartNo, auto.ResultValue, auto.tstStatus, "1", auto.Comment);
+                        await cmdOriginal.ExecuteNonQueryAsync();
                     }
                 }
 
-                // Commit the transaction after all inserts are successful
+                // 2️⃣ Insert into test_result_clean (vAutoResults + numeric vVisualResults)
+                var sqlClean = @"
+INSERT INTO test_result_clean
+    (part, serial, task, run_number, test_part, test_value, test_unit, result_status, result_text, date_tested, store_location, test_info1, test_info2, created_at, created_by)
+VALUES
+    (@Part, @Serial, @Task, @RunNumber, @TestPart, @TestValue, @TestUnit, @ResultStatus, @ResultText, GETDATE(), @StoreLocation, @TestInfo1, @TestInfo2, GETDATE(), @CreatedBy)";
+
+                using var cmdClean = conn.CreateCommand();
+                cmdClean.CommandText = sqlClean;
+                cmdClean.Transaction = transaction;
+
+                // Helper to add parameters for test_result_clean
+                void AddCleanParameters(DbCommand cmd, string part, string serial, string taskNoStr, string runNoStr,
+                                        string testPart, float testValue, string unit, string status, string text,
+                                        string storeLoc = "CFAWebAPI", string info1 = "", string info2 = "", string createdBy = "WebCFA")
+                {
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.Add(new SqlParameter("@Part", part ?? ""));
+                    cmd.Parameters.Add(new SqlParameter("@Serial", serial ?? ""));
+                    cmd.Parameters.Add(new SqlParameter("@Task", Convert.ToInt32(taskNoStr)));
+                    cmd.Parameters.Add(new SqlParameter("@RunNumber", Convert.ToInt32(runNoStr)));
+                    cmd.Parameters.Add(new SqlParameter("@TestPart", testPart ?? ""));
+                    cmd.Parameters.Add(new SqlParameter("@TestValue", testValue));
+                    cmd.Parameters.Add(new SqlParameter("@TestUnit", unit ?? "Unit"));
+                    cmd.Parameters.Add(new SqlParameter("@ResultStatus", status ?? ""));
+                    cmd.Parameters.Add(new SqlParameter("@ResultText", text ?? ""));
+                    cmd.Parameters.Add(new SqlParameter("@StoreLocation", storeLoc ?? "CFAWebAPI"));
+                    cmd.Parameters.Add(new SqlParameter("@TestInfo1", info1));
+                    cmd.Parameters.Add(new SqlParameter("@TestInfo2", info2));
+                    cmd.Parameters.Add(new SqlParameter("@CreatedBy", createdBy));
+                }
+
+                // Insert all vAutoResults
+                if (result.vAutoResults != null && result.vAutoResults.Any())
+                {
+                    foreach (var auto in result.vAutoResults)
+                    {
+                        if (float.TryParse(auto.ResultValue, out float val))
+                        {
+                            AddCleanParameters(cmdClean, partCa, SerialNo, taskNo, runNo, auto.PartNo, val,
+                                               auto.Unit, auto.tstStatus, auto.Comment, "CFAWebAPI", "", "");
+                            await cmdClean.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+
+                // Insert numeric vVisualResults
+                if (result.vVisualResults != null && result.vVisualResults.Any())
+                {
+                    foreach (var visual in result.vVisualResults)
+                    {
+                        if (float.TryParse(visual.ResultValue, out float val))
+                        {
+                            AddCleanParameters(cmdClean, partCa, SerialNo, taskNo, runNo, visual.PartNo, val,
+                                               visual.Unit, visual.tstStatus, visual.Comment, "CFAWebAPI", "", "");
+                            await cmdClean.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+
                 await transaction.CommitAsync();
                 isSuccess = true;
             }
             catch (Exception ex)
             {
-                // In case of error, roll back the transaction
                 await transaction.RollbackAsync();
-                // Log the exception for debugging purposes
                 Console.WriteLine($"Error occurred: {ex.Message}");
             }
 
             return isSuccess;
         }
-
 
         public async Task SaveTaskResultAsync(string partCa, string SerialNo, string runNo, string task)
         {
