@@ -1015,7 +1015,13 @@ ORDER BY ps.task_reference;
           'TS_CFA_MWT','TS_CFA_FNT','TS_CFA_ENER','TS_CFA_HEATUP','TS_CFA_VOLT',
           'TS_CFA_MWA','TS_CFA_CYCLET','TS_CFA_ADF'
       )
-    ORDER BY p.class, ps2.task_reference;
+     UNION 
+    select top 1 p.part,p.description,p.class, property_value as 'lower_limit_value', '99' as 'upper_limit_value','099' as 'task_reference'
+    from part_property_data ppd 
+    inner join part p on p.class ='TS_FAN_AIR_SPD'
+    where ppd.part=@ParentPart and ppd.property='FAN AIR SPEED'        
+
+ORDER BY p.class, ps2.task_reference;
 ";
 
 

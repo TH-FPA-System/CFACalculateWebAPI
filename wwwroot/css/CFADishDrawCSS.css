@@ -533,3 +533,100 @@ canvas {
     #loadBtn:active {
         background: #e0e0e0;
     }
+
+
+/* =======================
+   TABLET OPTIMIZATION
+   Target: iPad / Android Tablets
+======================= */
+@media (min-width: 769px) and (max-width: 1024px) {
+
+    body {
+        padding: 16px;
+        font-size: 16px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    /* Product card full width */
+    .product-card {
+        width: 100%;
+    }
+
+        /* Better grid layout for tablet */
+        .product-card > div {
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+    /* Buttons easier to tap */
+    button,
+    #loadBtn {
+        min-height: 44px;
+        font-size: 18px;
+    }
+
+    input,
+    select {
+        font-size: 18px;
+        height: 44px;
+    }
+
+    /* KPI boxes larger */
+    .kpi-box {
+        min-width: 140px;
+        padding: 12px;
+    }
+
+    .kpi-value {
+        font-size: 1.6em;
+    }
+
+    /* Tables: horizontal scroll instead of squeeze */
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    /* Visual Check inputs bigger */
+    #visualCheckTable input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+    }
+
+    .vc-comment {
+        font-size: 16px;
+        height: 40px;
+    }
+
+    /* Chart */
+    canvas {
+        max-height: 260px;
+    }
+}
+@media (orientation: landscape) and (max-width: 1024px) {
+    .product-card > div {
+        grid-template-columns: 2fr 1fr 1fr auto;
+    }
+
+}
+
+
+@media (max-width: 1024px) {
+    .product-result {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .product-text {
+        font-size: 16px;
+    }
+
+    .product-card {
+        width: 100%;
+    }
+}
+
