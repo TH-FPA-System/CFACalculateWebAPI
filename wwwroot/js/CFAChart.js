@@ -143,6 +143,11 @@ document.getElementById('saveResultTestBtn').addEventListener('click', async fun
         return;
     }
 
+    // --- Confirm dialog before saving ---
+    if (!confirm("Are you sure you want to save this result?")) {
+        return; // User cancelled
+    }
+
     const dataToSave = {
         vAutoResults: resultData,
         vVisualResults: visualCheckData,
@@ -159,13 +164,13 @@ document.getElementById('saveResultTestBtn').addEventListener('click', async fun
         });
 
         if (response.ok) {
-            alert('Result saved successfully');
+            showMessage('Result saved successfully', 'success');
         } else {
-            alert('Error saving result');
+            showMessage('Error saving result', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('An error occurred while saving the result.');
+        showMessage('An error occurred while saving the result.', 'error');
     }
 });
 
@@ -537,4 +542,39 @@ function copyProductInfo() {
         }
         document.body.removeChild(textarea);
     }
+}
+
+
+function showMessage(text, type = 'info', duration = 3000) {
+    const container = document.getElementById('messageContainer');
+    const msg = document.createElement('div');
+
+    // Set text
+    msg.textContent = text;
+
+    // Style by type
+    msg.style.padding = '10px 20px';
+    msg.style.marginTop = '5px';
+    msg.style.borderRadius = '5px';
+    msg.style.color = 'white';
+    msg.style.fontWeight = 'bold';
+    msg.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    msg.style.opacity = '0.95';
+    msg.style.transition = 'opacity 0.3s';
+
+    if (type === 'error') {
+        msg.style.backgroundColor = 'red';
+    } else if (type === 'success') {
+        msg.style.backgroundColor = 'green';
+    } else {
+        msg.style.backgroundColor = 'blue';
+    }
+
+    container.appendChild(msg);
+
+    // Remove after duration
+    setTimeout(() => {
+        msg.style.opacity = '0';
+        setTimeout(() => container.removeChild(msg), 300);
+    }, duration);
 }
