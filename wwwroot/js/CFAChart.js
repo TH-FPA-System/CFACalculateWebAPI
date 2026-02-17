@@ -63,7 +63,7 @@ async function loadResults() {
         renderKPIs(data);
         renderTable(data);
         renderVisualCheck(data);
-        renderChart(data);
+        //renderChart(data);
 
         openTab({ currentTarget: document.querySelector(".tab-button") }, 'ResultTableTab');
 
@@ -155,7 +155,7 @@ document.getElementById('saveResultTestBtn').addEventListener('click', async fun
     };
 
     try {
-        const response = await fetch('api/CFACal/SaveResultTest', {
+        const response = await fetch('./api/CFACal/SaveResultTest', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -412,31 +412,31 @@ function updateVisualKPI(el, index) {
 
 
 // ----------------- CHART -----------------
-function renderChart(data) {
-    if (!data || !Array.isArray(data.vPartLimits)) return;
-    const labels = data.vPartLimits.map(x => x.class);
-    const actual = data.vPartLimits.map(x => classMapping(x.class, data));
-    const lower = data.vPartLimits.map(x => x.lowerLimit);
-    const upper = data.vPartLimits.map(x => x.upperLimit);
+//function renderChart(data) {
+//    if (!data || !Array.isArray(data.vPartLimits)) return;
+//    const labels = data.vPartLimits.map(x => x.class);
+//    const actual = data.vPartLimits.map(x => classMapping(x.class, data));
+//    const lower = data.vPartLimits.map(x => x.lowerLimit);
+//    const upper = data.vPartLimits.map(x => x.upperLimit);
 
-    if (chartInstance) chartInstance.destroy();
-    const ctx = document.getElementById("limitChart");
-    chartInstance = new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels,
-            datasets: [
-                { label: "Actual", data: actual, backgroundColor: actual.map((v, i) => v < lower[i] || v > upper[i] ? "#e74c3c" : "#3498db") },
-                { label: "Lower Limit", data: lower, type: "line", borderColor: "green", fill: false },
-                { label: "Upper Limit", data: upper, type: "line", borderColor: "red", fill: false }
-            ]
-        },
-        options: {
-            onClick: (e, elms) => { if (elms.length) highlightRow(elms[0].index); },
-            plugins: { tooltip: { callbacks: { label: (ctx) => { const i = ctx.dataIndex; return `Actual: ${actual[i]}, Lower: ${lower[i]}, Upper: ${upper[i]}`; } } } }
-        }
-    });
-}
+//    if (chartInstance) chartInstance.destroy();
+//    const ctx = document.getElementById("limitChart");
+//    chartInstance = new Chart(ctx, {
+//        type: "bar",
+//        data: {
+//            labels,
+//            datasets: [
+//                { label: "Actual", data: actual, backgroundColor: actual.map((v, i) => v < lower[i] || v > upper[i] ? "#e74c3c" : "#3498db") },
+//                { label: "Lower Limit", data: lower, type: "line", borderColor: "green", fill: false },
+//                { label: "Upper Limit", data: upper, type: "line", borderColor: "red", fill: false }
+//            ]
+//        },
+//        options: {
+//            onClick: (e, elms) => { if (elms.length) highlightRow(elms[0].index); },
+//            plugins: { tooltip: { callbacks: { label: (ctx) => { const i = ctx.dataIndex; return `Actual: ${actual[i]}, Lower: ${lower[i]}, Upper: ${upper[i]}`; } } } }
+//        }
+//    });
+//}
 
 // ----------------- HIGHLIGHT -----------------
 function highlightRow(index) {
