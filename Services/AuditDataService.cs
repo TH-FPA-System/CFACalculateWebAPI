@@ -53,47 +53,49 @@ namespace CFACalculateWebAPI.Services
         {
             var results = new List<SampleRunResult>();
 
-            // Build SQL like Delphi
             var sql = @"
-WITH dat1 AS (
-    SELECT ROW_NUMBER() OVER (ORDER BY cfa_data_excel.seconds ASC) - 1 AS SampleRun,
-           seconds,
-           IIF(CAST(waterusage AS FLOAT) > (LAG(CAST(waterusage AS FLOAT)) OVER (ORDER BY seconds) + 10), 1, 0) AS ProductFilling
+WITH dat AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY seconds ASC) - 1 AS SampleRun,
+        seconds,
+        IIF(CAST(waterusage AS FLOAT) > (LAG(CAST(waterusage AS FLOAT)) OVER (ORDER BY seconds) + 10), 1, 0) AS ProductFilling
     FROM cfa_data_excel
     WHERE auditid = {0}
 ),
-dat2 AS (
-    SELECT samplerun,
-           seconds,
-           IIF(productfilling > LAG(productfilling) OVER (ORDER BY seconds), 1, 0) AS FILLSTART,
-           IIF(productfilling < LAG(productfilling) OVER (ORDER BY seconds), 1, 0) AS FILLEND
-    FROM dat1
+dat_flagged AS (
+    SELECT
+        SampleRun,
+        seconds,
+        ProductFilling,
+        IIF(ProductFilling > LAG(ProductFilling) OVER (ORDER BY seconds), 1, 0) AS FillStart,
+        IIF(ProductFilling < LAG(ProductFilling) OVER (ORDER BY seconds), 1, 0) AS FillEnd
+    FROM dat
 ),
 datfillstart AS (
-    SELECT ROW_NUMBER() OVER (ORDER BY dat1.seconds ASC) AS RunNo,
-           fillstart,
-           fillend,
-           dat1.seconds,
-           dat2.samplerun
-    FROM dat1, dat2
-    WHERE dat1.seconds = dat2.seconds AND dat2.fillstart = 1
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY seconds ASC) AS RunNo,
+        SampleRun,
+        seconds
+    FROM dat_flagged
+    WHERE FillStart = 1
 ),
 datfillend AS (
-    SELECT ROW_NUMBER() OVER (ORDER BY dat1.seconds ASC) AS RunNo,
-           fillstart,
-           fillend,
-           dat1.seconds,
-           dat2.samplerun
-    FROM dat1, dat2
-    WHERE dat1.seconds = dat2.seconds AND dat2.fillend = 1
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY seconds ASC) AS RunNo,
+        SampleRun,
+        seconds
+    FROM dat_flagged
+    WHERE FillEnd = 1
 )
-SELECT ds.RunNo, ds.samplerun AS StartSampleRun, de.samplerun AS EndSampleRun
+SELECT
+    ds.RunNo,
+    ds.SampleRun AS StartSampleRun,
+    de.SampleRun AS EndSampleRun
 FROM datfillstart ds
-INNER JOIN datfillend de ON ds.RunNo = de.RunNo;";
+INNER JOIN datfillend de ON ds.RunNo = de.RunNo order by ds.RunNo;";
 
-            // Decide audit condition
-            string auditCondition;
             bool useAuditId = !string.IsNullOrWhiteSpace(auditId);
+            string auditCondition;
 
             if (useAuditId)
                 auditCondition = "@AuditId";
@@ -101,15 +103,12 @@ INNER JOIN datfillend de ON ds.RunNo = de.RunNo;";
             {
                 if (string.IsNullOrWhiteSpace(serial))
                     throw new ArgumentException("Serial cannot be empty when AuditId is not provided.");
-
                 auditCondition = "(SELECT TOP 1 AuditID FROM Audit WHERE Serial = @Serial ORDER BY AuditID DESC)";
             }
 
             sql = string.Format(sql, auditCondition);
 
             using var conn = await GetOpenConnectionAsync();
-
-
             using var cmd = conn.CreateCommand();
             cmd.CommandText = sql;
 
