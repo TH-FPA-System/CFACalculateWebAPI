@@ -2,12 +2,8 @@ using CFACalculateWebAPI.Data;
 using CFACalculateWebAPI.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using System;
 using System.Data;
 using System.Data.Common; // ✅ add this
-using System.Data.SqlClient;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace CFACalculateWebAPI.Services
@@ -160,7 +156,7 @@ INNER JOIN datfillend de ON ds.RunNo = de.RunNo order by ds.RunNo;";
             return resultList.ToArray();
         }
         // Calculate Timed Final Fills
-        public async Task<TimedFinalFillResult> CalTimedFinalFillsNAsync(string? partCA,string? partCADes, string? serial, string? auditId, List<int> endSampleNos)
+        public async Task<TimedFinalFillResult> CalTimedFinalFillsNAsync(string? partCA, string? partCADes, string? serial, string? auditId, List<int> endSampleNos)
         {
             var timedFills = new List<double>();
 
@@ -229,13 +225,13 @@ ORDER BY FILLS;";
             }
 
             // ===== Calculate Timed Final FillResult =====
-            
-            var finalFillResult =  CalculateTimedFinalFillsAsync(partCA, partCADes, timedFills);
+
+            var finalFillResult = CalculateTimedFinalFillsAsync(partCA, partCADes, timedFills);
             return finalFillResult;
         }
 
         // Calculate Final Fills
-        private  TimedFinalFillResult CalculateTimedFinalFillsAsync(string? partCA,string? partCADes, List<double> timedFills)
+        private TimedFinalFillResult CalculateTimedFinalFillsAsync(string? partCA, string? partCADes, List<double> timedFills)
         {
             //Testing FLUSH -----------
             //            List<double> timedFillsForce = new List<double>
@@ -257,23 +253,23 @@ ORDER BY FILLS;";
             //------------------
 
             //Testing FLUSH -----------
-//            List<double> timedFillsForce = new List<double>
-//{
-//    1.591855198,
-//    0.674322625,
-//    0.43597485,
-//    0.438507232,
-//    0.439409727,
-//    0.43517365,
-//    1.494379927,
-//    0.570845662,
-//    1.493059314,
-//    0.469014047
-//};
+            //            List<double> timedFillsForce = new List<double>
+            //{
+            //    1.591855198,
+            //    0.674322625,
+            //    0.43597485,
+            //    0.438507232,
+            //    0.439409727,
+            //    0.43517365,
+            //    1.494379927,
+            //    0.570845662,
+            //    1.493059314,
+            //    0.469014047
+            //};
 
-//            timedFills = timedFillsForce;
-//            partCA = "82163";
-//            partCADes = "DD24DTX6HI1 US";
+            //            timedFills = timedFillsForce;
+            //            partCA = "82163";
+            //            partCADes = "DD24DTX6HI1 US";
             //------------------
             int n = timedFills.Count;
             int NoOfFills = n;
@@ -287,7 +283,7 @@ ORDER BY FILLS;";
             var gRunNoAll = new List<int>(new int[n]);
 
 
-            
+
 
 
 
@@ -324,7 +320,7 @@ ORDER BY FILLS;";
             }
             int mainFillCount = 0;
             int flushHistoryCount = 0;
-          
+
 
             for (int index = 0; index < timedFills.Count; index++)
             {
@@ -339,7 +335,7 @@ ORDER BY FILLS;";
                     partCADes ?? "" //" DD60DCHX9 FP TW" // Example value containing H
                 );
 
-            
+
                 //select* From part where part = '81627'
 
                 Console.WriteLine($"Check {value} → {classification}");
@@ -1074,7 +1070,7 @@ ORDER BY p.class, ps2.task_reference;
             if (LISBOM == "Y")
             {
                 //LIS TABLE LOCAL
-                 sql = @"
+                sql = @"
        SELECT
     ps.component,    
     COALESCE(ld.description_long, p.description) AS description,
@@ -1102,7 +1098,7 @@ ORDER BY ps.task_reference;
             }
             else
             {
-                 sql = @"
+                sql = @"
                        SELECT
                     ps.component,    
                     COALESCE(ld.description_long, p.description) AS description,
@@ -1131,7 +1127,7 @@ ORDER BY ps.task_reference;
 
 
 
-           
+
             using var cmd = new SqlCommand(sql, (SqlConnection)conn);
             cmd.Parameters.AddWithValue("@CA", CA);
             cmd.Parameters.AddWithValue("@Task", task);

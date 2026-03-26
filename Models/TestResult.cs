@@ -4,7 +4,7 @@
     public string? ResultValue { get; set; }
 
     public string? tstStatus { get; set; }
-   
+
     public string? Comment { get; set; }
     //For SPC Below
     public string? Unit { get; set; }

@@ -1,4 +1,3 @@
-using CFACalculateWebAPI.Models;
 using CFACalculateWebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -110,7 +109,7 @@ namespace CFACalculateWebAPI.Controllers
                 var voltage = await _service.CalVoltAsync(DataProduct[2], auditId);
 
                 // 6. Get Part Limits
-                var partLimits = await _service.GetPartLimitsAsync(DataProduct[1], DataProduct[2], TubType ?? "","4625");
+                var partLimits = await _service.GetPartLimitsAsync(DataProduct[1], DataProduct[2], TubType ?? "", "4625");
 
                 // 7. Visual Checks
                 var visualChecks = await _service.GetVisualChecksAsync(DataProduct[1], "4625");
@@ -156,7 +155,7 @@ namespace CFACalculateWebAPI.Controllers
             {
                 // 1. Fetch visual check items from database
                 var visualChecks = await _service.GetVisualChecksByCAAsync(CA, Task, LISBOM);
-              
+
                 // 2. Prepare response
                 var response = new
                 {
@@ -210,19 +209,19 @@ namespace CFACalculateWebAPI.Controllers
                     TaskNo = result.Task ?? "";
                 }
                 else
-                { 
-                if (string.IsNullOrEmpty(result.PartProduct))
                 {
-                    return BadRequest(new { message = "PartProduct cannot be null or empty." });
-                }
+                    if (string.IsNullOrEmpty(result.PartProduct))
+                    {
+                        return BadRequest(new { message = "PartProduct cannot be null or empty." });
+                    }
 
-                if (result.PartProduct.Length < 15)
-                {
-                    return BadRequest(new { message = "PartProduct is too short to extract both parts." });
-                }
+                    if (result.PartProduct.Length < 15)
+                    {
+                        return BadRequest(new { message = "PartProduct is too short to extract both parts." });
+                    }
 
-                 partCA = result.PartProduct.Substring(0, 5);
-                 SerialNo = result.PartProduct.Substring(6, 9);
+                    partCA = result.PartProduct.Substring(0, 5);
+                    SerialNo = result.PartProduct.Substring(6, 9);
                 }
                 string runNo = await _service.GetRunNumberAsync(SerialNo, TaskNo);
                 bool isOK = await _service.SaveTestResultAsync(partCA, SerialNo, runNo, result, TaskNo);

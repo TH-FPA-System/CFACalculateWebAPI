@@ -1,5 +1,3 @@
-using System;
-
 namespace CFACalculateWebAPI.Models
 {
     // This model represents the cfa_data_excel table
